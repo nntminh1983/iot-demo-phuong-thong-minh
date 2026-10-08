@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Phường Thông Minh IoT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Lexend:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: bảng điều khiển của phường — cảnh mô phỏng bên trái, số liệu bên phải, quy tắc và nhật ký bên dưới */
+:root{
+  --bg:#eef3f2; --surface:#ffffff; --surface-2:#f6f9f8; --ink:#13262a; --muted:#56696d; --line:#d3dfdd;
+  --accent:#0d7474; --accent-ink:#ffffff; --accent-soft:#d9eeec;
+  --ok:#23824f; --ok-soft:#dcf1e4; --warn:#a96f05; --warn-soft:#fbefd2; --bad:#c03a28; --bad-soft:#fadfd9; --info:#2f63a8; --info-soft:#dde8f6;
+  --sky:#bfe0ec; --ground:#c4d6c6; --road:#6f7d80; --road-line:#e8ecea; --bldg:#f3efe6; --bldg-line:#9aa6a3; --roof:#b4483a;
+  --win:#a9bcc3; --win-lit:#ffd166; --water:#2f86d0; --night:#0b1630; --haze:#9a8f78; --glow:#ffe08a; --rain:#5f87a8;
+  --sign-bg:#14201f; --sign-fg:#ffc94a; --label-halo:#ffffff; --cloud:#ffffff;
+  --f-display:"Lexend","Be Vietnam Pro",system-ui,sans-serif;
+  --f-body:"Be Vietnam Pro",system-ui,"Segoe UI",sans-serif;
+  --f-data:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e1a1c; --surface:#15252a; --surface-2:#1a2d32; --ink:#e4eeed; --muted:#9bb0b2; --line:#29403f;
+  --accent:#3bb6ad; --accent-ink:#06201e; --accent-soft:#163a39;
+  --ok:#4cc584; --ok-soft:#173527; --warn:#e2a73a; --warn-soft:#3a2d12; --bad:#f07563; --bad-soft:#40201b; --info:#7fa9e6; --info-soft:#1b2c45;
+  --sky:#6f98aa; --ground:#5d7462; --road:#3e4a4d; --road-line:#9aa5a3; --bldg:#cfc9bb; --bldg-line:#6d7774; --roof:#9a3c30;
+  --win:#6f858c; --win-lit:#ffd166; --water:#3f95e0; --night:#050b1c; --haze:#7d7461; --glow:#ffe08a; --rain:#a9c6dc;
+  --sign-bg:#0a1211; --sign-fg:#ffc94a; --label-halo:#15252a; --cloud:#dfe9ec; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1a1c; --surface:#15252a; --surface-2:#1a2d32; --ink:#e4eeed; --muted:#9bb0b2; --line:#29403f;
+  --accent:#3bb6ad; --accent-ink:#06201e; --accent-soft:#163a39;
+  --ok:#4cc584; --ok-soft:#173527; --warn:#e2a73a; --warn-soft:#3a2d12; --bad:#f07563; --bad-soft:#40201b; --info:#7fa9e6; --info-soft:#1b2c45;
+  --sky:#6f98aa; --ground:#5d7462; --road:#3e4a4d; --road-line:#9aa5a3; --bldg:#cfc9bb; --bldg-line:#6d7774; --roof:#9a3c30;
+  --win:#6f858c; --win-lit:#ffd166; --water:#3f95e0; --night:#050b1c; --haze:#7d7461; --glow:#ffe08a; --rain:#a9c6dc;
+  --sign-bg:#0a1211; --sign-fg:#ffc94a; --label-halo:#15252a; --cloud:#dfe9ec; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55}
+.wrap{max-width:1320px;margin:0 auto;padding:28px 20px 48px;display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:clamp(1.7rem,3.4vw,2.5rem);font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.2rem;font-weight:600}
+h3{font-size:1rem;font-weight:600}
+p{margin:0}
+.eyebrow{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.muted{color:var(--muted)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;align-items:flex-end}
+.top .intro{display:flex;flex-direction:column;gap:8px;max-width:68ch;min-width:0}
+.lede{font-size:1.04rem;color:var(--muted)}
+.lede b{color:var(--ink)}
+.ctrl{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.clock{font-family:var(--f-data);font-size:1.9rem;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.clock-wrap{display:flex;flex-direction:column;line-height:1.1}
+.clock-wrap small{font-size:.75rem;color:var(--muted)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 16px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+/* 4 steps */
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;transition:background .3s,border-color .3s,transform .3s}
+.step .n{grid-row:span 3;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);font-weight:700;background:var(--accent-soft);color:var(--accent)}
+.step .t{font-family:var(--f-display);font-weight:600}
+.step .a{font-size:.8rem;color:var(--accent);font-weight:600}
+.step .d{font-size:.88rem;color:var(--muted)}
+.step.on{background:var(--accent-soft);border-color:var(--accent);transform:translateY(-2px)}
+.step.on .n{background:var(--accent);color:var(--accent-ink)}
+
+/* scenarios */
+.scn{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.scn .lbl{font-weight:600;margin-right:4px}
+.scn button{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:500;text-align:left;display:flex;flex-direction:column;line-height:1.25}
+.scn button small{font-size:.75rem;color:var(--muted);font-weight:400}
+.scn button:hover{border-color:var(--accent)}
+.scn button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+
+/* main grid */
+.main{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;align-items:start}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.scene{padding:0;overflow:hidden}
+.scene svg{display:block;width:100%;height:auto}
+.scene-cap{display:flex;flex-wrap:wrap;gap:6px 16px;padding:10px 16px;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}
+.scene-cap span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;background:var(--accent)}
+
+/* svg classes */
+.s-sky{fill:var(--sky)} .s-ground{fill:var(--ground)} .s-road{fill:var(--road)} .s-roadline{stroke:var(--road-line);stroke-width:3;stroke-dasharray:18 14}
+.s-bldg{fill:var(--bldg);stroke:var(--bldg-line);stroke-width:2} .s-roof{fill:var(--roof)} .s-win{fill:var(--win)} .s-door{fill:var(--bldg-line)}
+.s-meet{fill:var(--win);transition:fill .4s} .s-meet.lit{fill:var(--win-lit)}
+.s-person{fill:var(--ink);opacity:.7}
+.s-pole{stroke:var(--bldg-line);stroke-width:5;stroke-linecap:round;fill:none}
+.s-box{fill:var(--surface);stroke:var(--bldg-line);stroke-width:2}
+.s-water{fill:var(--water);opacity:.78;transition:height .6s,y .6s}
+.s-thr{stroke:var(--bad);stroke-width:2;stroke-dasharray:6 4}
+.s-gauge{stroke:var(--ink);stroke-width:1.5}
+.s-night{fill:var(--night);transition:opacity 1s}
+.s-haze{fill:var(--haze);transition:opacity 1s}
+.s-glow{fill:var(--glow);transition:opacity .6s}
+.s-lamphead{fill:var(--bldg-line);transition:fill .4s} .s-lamphead.on{fill:var(--glow)}
+.s-sign{fill:var(--sign-bg);stroke:var(--bldg-line);stroke-width:2}
+.s-signtxt{fill:var(--sign-fg);font-family:var(--f-body);font-weight:700;text-anchor:middle}
+.s-signtxt.alert{fill:#ff6b57}
+.s-cloud{fill:var(--cloud);stroke:var(--accent);stroke-width:2}
+.s-link{stroke:var(--accent);stroke-width:1.5;stroke-dasharray:3 6;opacity:.55;fill:none}
+.s-label{fill:var(--ink);font-family:var(--f-body);font-size:12px;font-weight:600;paint-order:stroke;stroke:var(--label-halo);stroke-width:4px;stroke-linejoin:round}
+.s-label.c{text-anchor:middle}
+.s-mk circle{fill:var(--accent);stroke:var(--label-halo);stroke-width:3}
+.s-mk text{fill:var(--accent-ink);font-family:var(--f-display);font-weight:700;font-size:13px;text-anchor:middle;dominant-baseline:central}
+.s-mk.alarm circle{fill:var(--bad)}
+.s-mk.alarm{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+.s-pkt{fill:var(--accent);stroke:var(--label-halo);stroke-width:2}
+.s-pkt.big{fill:var(--bad)}
+.s-pkt.go{fill:var(--ok)}
+.s-pump{fill:var(--surface);stroke:var(--bldg-line);stroke-width:2;transition:fill .4s}
+.s-pump.on{fill:var(--ok)}
+.s-ac{fill:var(--surface);stroke:var(--bldg-line);stroke-width:2}
+.s-acair{stroke:var(--info);stroke-width:2;stroke-linecap:round;fill:none;opacity:0;transition:opacity .4s}
+.s-acair.on{opacity:1}
+.s-clock{fill:var(--ink);font-family:var(--f-data);font-weight:700;font-size:26px;paint-order:stroke;stroke:var(--label-halo);stroke-width:5px}
+.s-rain line{stroke:var(--rain);stroke-width:1.6;stroke-linecap:round;animation:fall .7s linear infinite}
+.s-rain{display:none}.s-rain.on{display:inline}
+@keyframes fall{from{transform:translate(0,-30px)}to{transform:translate(-14px,60px)}}
+
+/* story */
+.story{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.story-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline}
+.badge{font-size:.78rem;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.story .intro-txt{color:var(--muted)}
+.story ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.story li{display:grid;grid-template-columns:118px minmax(0,1fr);gap:12px;padding:10px 12px;border-radius:10px;background:var(--surface-2);opacity:.55;transition:opacity .35s,background .35s}
+.story li.on{opacity:1;background:var(--accent-soft)}
+.story li b{font-family:var(--f-display);font-weight:600;font-size:.9rem;color:var(--accent)}
+.packet{display:inline-block;margin-top:6px;font-family:var(--f-data);font-size:.8rem;background:var(--surface);border:1px dashed var(--accent);border-radius:8px;padding:4px 10px;overflow-wrap:anywhere}
+
+/* right column */
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tile{padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.tile .v{font-family:var(--f-data);font-weight:700;font-size:1.45rem;font-variant-numeric:tabular-nums}
+.tile .k{font-size:.78rem;color:var(--muted);line-height:1.3}
+.sensors{display:flex;flex-direction:column;gap:10px}
+.sensor{padding:12px 14px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center}
+.sensor .mk{width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:.85rem;grid-row:span 2}
+.sensor .nm{font-weight:600;font-size:.92rem;line-height:1.3}
+.sensor .loc{font-size:.76rem;color:var(--muted)}
+.sensor .val{font-family:var(--f-data);font-weight:700;font-size:1.35rem;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.sensor .val small{font-size:.75rem;color:var(--muted);font-weight:500;margin-left:3px}
+.sensor .row2{grid-column:2 / 4;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sensor svg{width:140px;max-width:50%;height:30px}
+.pill{font-size:.75rem;font-weight:600;padding:2px 10px;border-radius:999px;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.info{background:var(--info-soft);color:var(--info)} .pill.idle{background:var(--surface-2);color:var(--muted)}
+.sensor.bad{border-color:var(--bad);box-shadow:0 0 0 2px var(--bad-soft)}
+.acts{padding:14px;display:flex;flex-direction:column;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:7px;font-size:.85rem;padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--muted)}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.chip.on{color:var(--ink);border-color:var(--ok);background:var(--ok-soft)} .chip.on i{background:var(--ok)}
+.chip.alert{border-color:var(--bad);background:var(--bad-soft);color:var(--ink)} .chip.alert i{background:var(--bad)}
+
+/* lower */
+.lower{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start}
+.panel{padding:18px 20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel .sub{font-size:.88rem;color:var(--muted)}
+.slider{display:flex;flex-direction:column;gap:2px}
+.slider .top2{display:flex;justify-content:space-between;gap:8px;font-size:.88rem}
+.slider output{font-family:var(--f-data);font-weight:700;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.rule{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.rule.off{opacity:.6}
+.rule .if{font-size:.9rem}
+.rule .if em{font-style:normal;font-weight:700;color:var(--accent)}
+.rule .thr{grid-column:2;display:flex;gap:10px;align-items:center;font-size:.85rem}
+.switch{position:relative;width:44px;height:26px;flex:none}
+.switch input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.switch span{position:absolute;inset:0;border-radius:999px;background:var(--line);transition:background .2s;pointer-events:none}
+.switch span::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--surface);transition:transform .2s}
+.switch input:checked + span{background:var(--accent)}
+.switch input:checked + span::after{transform:translateX(18px)}
+.switch input:focus-visible + span{outline:3px solid var(--accent);outline-offset:2px}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:520px;overflow-y:auto}
+.log li{display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;font-size:.88rem;padding:8px 10px;border-radius:8px;border-left:4px solid var(--line);background:var(--surface-2)}
+.log li time{font-family:var(--f-data);font-weight:700;font-size:.8rem;color:var(--muted);padding-top:1px}
+.log li.bad{border-left-color:var(--bad)} .log li.warn{border-left-color:var(--warn)} .log li.ok{border-left-color:var(--ok)} .log li.info{border-left-color:var(--info)}
+
+/* notes */
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.notes .panel ul,.notes .panel ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:.93rem}
+.notes dl{margin:0;display:flex;flex-direction:column;gap:8px;font-size:.93rem}
+.notes dt{font-weight:700}
+.notes dd{margin:0;color:var(--muted)}
+
+@media (max-width:1100px){ .main{grid-template-columns:1fr} .lower{grid-template-columns:1fr 1fr} .lower .logp{grid-column:1 / -1} .notes{grid-template-columns:1fr} }
+@media (max-width:760px){ .steps{grid-template-columns:1fr 1fr} .lower{grid-template-columns:1fr} .tiles{grid-template-columns:1fr 1fr 1fr} .story li{grid-template-columns:1fr;gap:2px} }
+@media (max-width:460px){ .wrap{padding:20px 16px 40px} .steps{grid-template-columns:1fr} .tiles{grid-template-columns:1fr} .scn button{flex:1 1 100%} }
+@media (prefers-reduced-motion: reduce){ *{transition:none!important;animation:none!important} }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="intro">
+      <p class="eyebrow">Chuyển đổi số trong quản lý nhà nước · Mô phỏng IoT</p>
+      <h1>Phường An Bình thông minh</h1>
+      <p class="lede"><b>Internet vạn vật (IoT)</b> là các đồ vật được gắn cảm biến và nối mạng, để tự báo tình hình và tự xử lý theo quy tắc do con người đặt ra. Phường mô phỏng dưới đây có 4 thiết bị IoT. Hãy chọn một tình huống rồi quan sát hệ thống làm việc.</p>
+    </div>
+    <div class="ctrl">
+      <div class="clock-wrap"><span class="clock" id="clock">09:00</span><small>Giờ mô phỏng · 1 giây ≈ 1 phút</small></div>
+      <button class="btn" id="pause" type="button">Tạm dừng</button>
+      <button class="btn" id="speed" type="button">Tốc độ ×1</button>
+    </div>
+  </header>
+
+  <ol class="steps" id="steps" aria-label="Bốn bước hoạt động của IoT">
+    <li class="step"><span class="n">1</span><span class="t">Cảm nhận</span><span class="a">Như mắt và tai</span><span class="d">Cảm biến đo nhiệt độ, mực nước, khói bụi, ánh sáng… liên tục, ngày đêm.</span></li>
+    <li class="step"><span class="n">2</span><span class="t">Truyền tin</span><span class="a">Như chiếc điện thoại</span><span class="d">Số đo được gửi qua Wi-Fi, 4G hoặc mạng IoT về Trung tâm điều hành.</span></li>
+    <li class="step"><span class="n">3</span><span class="t">Phân tích</span><span class="a">Như bộ não</span><span class="d">Phần mềm so sánh số đo với ngưỡng và quy tắc do lãnh đạo quyết định.</span></li>
+    <li class="step"><span class="n">4</span><span class="t">Hành động</span><span class="a">Như đôi tay</span><span class="d">Tự bật, tắt thiết bị, gửi cảnh báo cho người dân, ghi lại để báo cáo.</span></li>
+  </ol>
+
+  <section class="scn" aria-label="Chọn tình huống">
+    <span class="lbl">Chọn tình huống:</span>
+    <div id="scnBtns" class="scn"></div>
+  </section>
+
+  <div class="main">
+    <div class="col">
+      <figure class="card scene" style="margin:0">
+        <svg id="scene" viewBox="0 0 800 420" role="img" aria-label="Hình mô phỏng phường An Bình với trụ sở, đường phố, trạm quan trắc, bảng điện tử và đèn đường">
+          <rect class="s-sky" x="0" y="0" width="800" height="310"/>
+          <!-- trung tâm điều hành -->
+          <g>
+            <circle class="s-cloud" cx="668" cy="72" r="22"/><circle class="s-cloud" cx="694" cy="58" r="28"/><circle class="s-cloud" cx="722" cy="74" r="20"/>
+            <rect x="660" y="66" width="70" height="28" rx="8" fill="var(--cloud)"/>
+            <text class="s-label c" x="694" y="80" style="font-size:11px">Nền tảng IoT</text>
+          </g>
+          <rect class="s-ground" x="0" y="300" width="800" height="120"/>
+          <rect class="s-road" x="0" y="332" width="800" height="48"/>
+          <line class="s-roadline" x1="0" y1="356" x2="800" y2="356"/>
+          <!-- trụ sở -->
+          <rect class="s-bldg" x="60" y="150" width="230" height="182"/>
+          <polygon class="s-roof" points="50,152 175,118 300,152"/>
+          <line class="s-pole" x1="175" y1="118" x2="175" y2="84" style="stroke-width:3"/>
+          <polygon fill="var(--bad)" points="176,84 202,91 176,98"/>
+          <text class="s-label c" x="175" y="170" style="font-size:11px">TRỤ SỞ UBND PHƯỜNG</text>
+          <rect class="s-win" x="78" y="184" width="40" height="40" rx="3"/>
+          <rect class="s-win" x="128" y="184" width="40" height="40" rx="3"/>
+          <rect class="s-meet" id="meetWin" x="178" y="184" width="94" height="52" rx="3"/>
+          <g id="people"></g>
+          <rect class="s-win" x="78" y="246" width="40" height="36" rx="3"/>
+          <rect class="s-win" x="128" y="246" width="40" height="36" rx="3"/>
+          <rect class="s-win" x="232" y="250" width="40" height="32" rx="3"/>
+          <rect class="s-door" x="183" y="288" width="36" height="44" rx="2"/>
+          <text class="s-label c" x="225" y="248" style="font-size:10px">Phòng họp</text>
+          <rect class="s-ac" x="292" y="192" width="30" height="20" rx="3"/>
+          <path class="s-acair" id="acAir" d="M300 218 q4 6 0 12 M308 218 q4 6 0 12 M316 218 q4 6 0 12"/>
+          <text class="s-label" x="292" y="186" style="font-size:10px">Điều hòa</text>
+          <!-- trạm không khí -->
+          <line class="s-pole" x1="365" y1="256" x2="365" y2="332"/>
+          <rect class="s-box" x="348" y="232" width="34" height="26" rx="4"/>
+          <text class="s-label c" x="365" y="290" style="font-size:10px">Trạm đo</text>
+          <text class="s-label c" x="365" y="303" style="font-size:10px">không khí</text>
+          <!-- bảng điện tử -->
+          <line class="s-pole" x1="462" y1="258" x2="462" y2="332"/><line class="s-pole" x1="608" y1="258" x2="608" y2="332"/>
+          <!-- cột đo nước -->
+          <line class="s-pole" x1="520" y1="330" x2="520" y2="382" style="stroke-width:4"/>
+          <g id="gauge"></g>
+          <!-- đèn đường -->
+          <line class="s-pole" x1="742" y1="222" x2="742" y2="332"/>
+          <path class="s-pole" d="M742 224 q0 -8 -12 -8 h-14" style="stroke-width:4"/>
+          <!-- bơm -->
+          <line class="s-pole" x1="640" y1="372" x2="660" y2="390" style="stroke-width:4"/>
+          <rect class="s-pump" id="pump" x="652" y="386" width="44" height="24" rx="4"/>
+          <text class="s-label c" x="674" y="402" style="font-size:10px">Bơm</text>
+          <!-- lớp đêm, khói bụi -->
+          <rect class="s-night" id="night" x="0" y="0" width="800" height="420" opacity="0"/>
+          <rect class="s-haze" id="haze" x="0" y="0" width="800" height="420" opacity="0"/>
+          <!-- nước ngập (trên lớp đêm cho dễ nhìn) -->
+          <rect class="s-water" id="water" x="396" y="380" width="250" height="0"/>
+          <line class="s-thr" id="thrLine" x1="396" y1="356" x2="646" y2="356"/>
+          <text class="s-label" id="thrTxt" x="398" y="350" style="font-size:10px;fill:var(--bad)">Ngưỡng 30 cm</text>
+          <!-- các phần phát sáng -->
+          <circle class="s-glow" id="glow" cx="712" cy="236" r="46" opacity="0"/>
+          <rect class="s-lamphead" id="lampHead" x="702" y="214" width="22" height="9" rx="3"/>
+          <rect class="s-sign" x="440" y="200" width="190" height="58" rx="5"/>
+          <text class="s-signtxt" id="sign1" x="535" y="224" style="font-size:14px">PHƯỜNG AN BÌNH</text>
+          <text class="s-signtxt" id="sign2" x="535" y="245" style="font-size:11px">Chào mừng quý khách</text>
+          <g class="s-rain" id="rain"></g>
+          <!-- kết nối và thiết bị -->
+          <g id="links"></g>
+          <g id="markers"></g>
+          <g id="pkts"></g>
+          <text class="s-clock" id="sceneClock" x="18" y="38">09:00</text>
+          <text class="s-label" x="20" y="58">Phường An Bình (mô phỏng)</text>
+          <text class="s-label c" x="694" y="112">Trung tâm điều hành</text>
+        </svg>
+        <figcaption class="scene-cap">
+          <span><i class="dot"></i>Số tròn: thiết bị IoT (khớp với thẻ số liệu bên phải)</span>
+          <span>Đường chấm: kết nối mạng về Trung tâm</span>
+          <span>Chấm di chuyển: gói tin số liệu</span>
+        </figcaption>
+      </figure>
+
+      <section class="card story" aria-live="polite">
+        <div class="story-head"><h2>Điều gì đang xảy ra?</h2><span class="badge" id="scnBadge">Ngày làm việc bình thường</span></div>
+        <p class="intro-txt" id="scnIntro"></p>
+        <ol id="storyRows">
+          <li><b>1 · Cảm nhận</b><span></span></li>
+          <li><b>2 · Truyền tin</b><span></span></li>
+          <li><b>3 · Phân tích</b><span></span></li>
+          <li><b>4 · Hành động</b><span></span></li>
+        </ol>
+      </section>
+    </div>
+
+    <aside class="col" aria-label="Bảng điều khiển">
+      <div class="tiles">
+        <div class="card tile"><span class="v" id="stSms">0</span><span class="k">tin nhắn cảnh báo đã gửi tới người dân</span></div>
+        <div class="card tile"><span class="v" id="stAuto">0</span><span class="k">lần hệ thống tự xử lý, không cần chờ chỉ đạo</span></div>
+        <div class="card tile"><span class="v" id="stKwh">0,00</span><span class="k" id="stKwhK">kWh điện tiết kiệm được</span></div>
+      </div>
+      <div class="sensors" id="sensors"></div>
+      <div class="card acts">
+        <h3>Thiết bị được điều khiển tự động</h3>
+        <div class="chips" id="chips"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="lower">
+    <section class="card panel">
+      <div><h2>Tự tay thử</h2><p class="sub">Kéo thanh trượt để giả lập số đo của cảm biến. Ví dụ: kéo mực nước lên 35 cm, hoặc cho phòng họp về 0 người.</p></div>
+      <div id="sliders" style="display:flex;flex-direction:column;gap:12px"></div>
+    </section>
+    <section class="card panel">
+      <div><h2>Quy tắc tự động</h2><p class="sub">Đây là phần việc của lãnh đạo: quyết định <b>khi nào</b> thì hệ thống <b>làm gì</b>. Thử tắt một quy tắc rồi chạy lại tình huống để thấy khác biệt.</p></div>
+      <div id="rules" style="display:flex;flex-direction:column;gap:10px"></div>
+    </section>
+    <section class="card panel logp">
+      <div><h2>Nhật ký sự kiện</h2><p class="sub">Mọi việc đều được ghi lại tự động, dùng cho báo cáo và hậu kiểm.</p></div>
+      <ul class="log" id="log"></ul>
+    </section>
+  </div>
+
+  <section class="notes">
+    <div class="card panel">
+      <h2>Ba điều lãnh đạo cần nhớ</h2>
+      <ol>
+        <li><b>IoT cho số liệu thật, theo thời gian thực.</b> Thay vì chờ báo cáo cuối ngày, lãnh đạo thấy ngay tình hình tại hiện trường.</li>
+        <li><b>Con người đặt quy tắc, máy thực thi.</b> Ngưỡng cảnh báo, ai được nhận tin, thiết bị nào được tự bật tắt đều do cơ quan quyết định.</li>
+        <li><b>Cần tính cả vận hành và an toàn thông tin.</b> Thiết bị phải được bảo trì, có kinh phí đường truyền, và dữ liệu phải được bảo vệ.</li>
+      </ol>
+    </div>
+    <div class="card panel">
+      <h2>Câu hỏi thảo luận</h2>
+      <ul>
+        <li>Ở đơn vị của anh/chị, việc nào đang phải chờ người đi kiểm tra rồi báo cáo lại?</li>
+        <li>Nếu ngưỡng ngập đặt quá thấp, người dân sẽ nhận quá nhiều tin nhắn. Ai chịu trách nhiệm điều chỉnh ngưỡng?</li>
+        <li>Khi cảm biến hỏng hoặc mất mạng, quy trình dự phòng là gì?</li>
+        <li>Dữ liệu thu được thuộc về ai, lưu ở đâu, ai được xem?</li>
+      </ul>
+    </div>
+    <div class="card panel">
+      <h2>Từ điển nhỏ</h2>
+      <dl>
+        <div><dt>Cảm biến</dt><dd>Linh kiện đo một đại lượng: nhiệt độ, mực nước, bụi mịn, ánh sáng, chuyển động.</dd></div>
+        <div><dt>Nền tảng IoT</dt><dd>Phần mềm trung tâm nhận, lưu và phân tích số liệu từ mọi thiết bị.</dd></div>
+        <div><dt>Ngưỡng</dt><dd>Mức giới hạn do con người đặt; vượt ngưỡng thì hệ thống hành động.</dd></div>
+        <div><dt>AQI</dt><dd>Chỉ số chất lượng không khí. Trên 150 là có hại cho sức khỏe.</dd></div>
+        <div><dt>Bảng điều khiển</dt><dd>Màn hình tổng hợp số liệu cho người quản lý, như cột bên phải trang này.</dd></div>
+      </dl>
+    </div>
+  </section>
+  <p class="muted" style="font-size:.8rem">Số liệu trên trang là mô phỏng phục vụ giảng dạy. Giá điện ước tính 3.000 đ/kWh.</p>
+</div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const NS = 'http://www.w3.org/2000/svg';
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const nf = (v,d=0) => v.toLocaleString('vi-VN',{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmtT = m => { m = ((Math.round(m)%1440)+1440)%1440; return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); };
+const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+
+const DEV = {
+  1:{code:'PH-01', name:'Cảm biến phòng họp', x:262, y:184},
+  2:{code:'MN-02', name:'Cảm biến mực nước', x:520, y:322},
+  3:{code:'KK-03', name:'Trạm quan trắc không khí', x:365, y:218},
+  4:{code:'AS-04', name:'Cảm biến ánh sáng', x:756, y:206},
+};
+const CENTER = {x:694, y:64};
+const APOS = { pump:{x:674,y:398}, sign:{x:535,y:229}, lamp:{x:712,y:220}, ac:{x:307,y:202}, room:{x:225,y:210} };
+
+const M = {
+  temp:  {label:'Nhiệt độ phòng họp', loc:'Trụ sở UBND phường', dev:1, unit:'°C', min:18, max:40, step:.5, dec:1, v:27, t:27, rate:.2, noise:.06},
+  people:{label:'Số người trong phòng họp', loc:'Cảm biến hiện diện', dev:1, unit:'người', min:0, max:30, step:1, dec:0, v:12, t:12, rate:1, noise:0},
+  water: {label:'Mực nước tại cống', loc:'Đường Trần Phú, Tổ 3', dev:2, unit:'cm', min:0, max:60, step:1, dec:0, v:2, t:2, rate:.22, noise:.25},
+  aqi:   {label:'Chất lượng không khí', loc:'Trước trường Tiểu học An Bình', dev:3, unit:'AQI', min:0, max:300, step:5, dec:0, v:55, t:55, rate:.2, noise:1.2},
+  light: {label:'Độ sáng ngoài trời', loc:'Cột đèn đường Trần Phú', dev:4, unit:'lux', min:0, max:1000, step:10, dec:0, v:800, t:800, rate:.3, noise:3},
+};
+for (const k in M) M[k].h = Array(40).fill(M[k].v);
+
+const rules = {
+  flood:{on:true, thr:30},
+  air:{on:true}, lamp:{on:true}, ac:{on:true}, empty:{on:true},
+};
+const act = {pump:false, flood:false, air:false, lamp:false, ac:false, room:true};
+const flag = {missFlood:false, missAir:false};
+const stats = {sms:0, auto:0, kwh:0};
+let clock = 9*60, emptyMin = 0, savedLoad = 0, raining = false;
+let scn = null, running = true, speed = 1, timer = null, tickN = 0;
+
+function status(k){
+  const v = M[k].v;
+  switch(k){
+    case 'temp': return v>32?['bad','Rất nóng']:v>28?['warn','Hơi nóng']:['ok','Dễ chịu'];
+    case 'people': return v>0?['info','Đang có người']:['idle','Phòng trống'];
+    case 'water': return v>=rules.flood.thr?['bad','Vượt ngưỡng']:v>=rules.flood.thr/2?['warn','Nước đang dâng']:['ok','Khô ráo'];
+    case 'aqi': return v>150?['bad','Có hại']:v>100?['warn','Kém']:v>50?['ok','Trung bình']:['ok','Tốt'];
+    case 'light': return v<50?['info','Trời tối']:v<300?['info','Trời râm']:['info','Ban ngày'];
+  }
+}
+
+/* ---------- Kịch bản ---------- */
+const SCN = {
+  normal:{name:'Ngày làm việc bình thường', hint:'Mọi thứ ổn định', clock:9*60,
+    intro:'9 giờ sáng, trời nắng nhẹ, phòng họp có 12 người. Mọi chỉ số đều bình thường. Hệ thống không làm gì cả, chỉ lặng lẽ theo dõi và lưu số liệu. Đây là trạng thái thường ngày của một hệ thống IoT.',
+    start:{temp:27,people:12,water:2,aqi:55,light:800}, act:{room:true,ac:false,lamp:false}, steps:[]},
+  rain:{name:'Mưa lớn chiều tối', hint:'Cảnh báo ngập', clock:16*60+30,
+    intro:'16 giờ 30, mưa lớn bất chợt. Hãy quan sát cảm biến số 2 ở cống đường Trần Phú, bảng điện tử và máy bơm.',
+    start:{temp:27,people:10,water:3,aqi:40,light:600}, act:{room:true,ac:false,lamp:false},
+    steps:[{at:0,set:{water:14,light:200},rain:true},{at:5,set:{water:44,light:60}},{at:28,set:{water:3,light:40},rain:false}]},
+  air:{name:'Không khí ô nhiễm', hint:'Bảo vệ sức khỏe', clock:7*60+20,
+    intro:'7 giờ 20, giờ cao điểm, sương mù và khói bụi dày. Hãy quan sát trạm quan trắc số 3 đặt trước cổng trường tiểu học.',
+    start:{temp:25,people:0,water:2,aqi:90,light:400}, act:{room:false,ac:false,lamp:false},
+    steps:[{at:0,set:{aqi:185}},{at:24,set:{aqi:80,light:750}}]},
+  heat:{name:'Nắng nóng, họp đầu giờ chiều', hint:'Điều hòa thông minh', clock:12*60+50,
+    intro:'12 giờ 50, trời nắng gắt, phòng họp đang trống và nóng. 13 giờ có cuộc họp 18 người. Hãy quan sát cảm biến số 1 và điều hòa.',
+    start:{temp:31,people:0,water:0,aqi:70,light:950}, act:{room:false,ac:false,lamp:false},
+    steps:[{at:0,set:{temp:33}},{at:8,set:{people:18}}]},
+  evening:{name:'Hết giờ làm việc', hint:'Tiết kiệm điện', clock:17*60+15,
+    intro:'17 giờ 15, cuộc họp kết thúc, mọi người ra về nhưng quên tắt đèn và điều hòa. Trời cũng dần tối. Hãy quan sát phòng họp và đèn đường.',
+    start:{temp:26,people:16,water:2,aqi:60,light:450}, act:{room:true,ac:true,lamp:false},
+    steps:[{at:3,set:{people:3}},{at:6,set:{people:0,light:15}}]},
+};
+
+function startScenario(key){
+  const s = SCN[key];
+  scn = {key, tick:0};
+  clock = s.clock; emptyMin = 0; savedLoad = 0; raining = false;
+  Object.assign(act, {pump:false, flood:false, air:false}, s.act);
+  flag.missFlood = flag.missAir = false;
+  for (const k in s.start){ M[k].v = M[k].t = s.start[k]; M[k].h = Array(40).fill(s.start[k]); }
+  applySteps();
+  $('#scnBadge').textContent = s.name;
+  $('#scnIntro').textContent = s.intro;
+  setStory(['Các cảm biến đang đo liên tục.','Số liệu được gửi về Trung tâm vài giây một lần.','Chưa có chỉ số nào vượt ngưỡng.','Chưa cần hành động.'], -1);
+  document.querySelectorAll('#scnBtns button').forEach(b => b.setAttribute('aria-pressed', b.dataset.k===key));
+  log('info', 'Bắt đầu tình huống: ' + s.name + '.');
+  if (!running) togglePause();
+  render();
+}
+function applySteps(){
+  if (!scn) return;
+  for (const st of SCN[scn.key].steps) if (st.at === scn.tick){
+    if (st.set) for (const k in st.set){ M[k].t = st.set[k]; if (k==='people') M[k].v = st.set[k]; }
+    if ('rain' in st) raining = st.rain;
+  }
+}
+
+/* ---------- Mô phỏng ---------- */
+function tick(){
+  clock++; tickN++;
+  if (scn){ scn.tick++; applySteps(); }
+  for (const k in M){
+    const m = M[k]; let tgt = m.t;
+    if (k==='water' && act.pump) tgt = Math.max(0, tgt-14);
+    if (k==='temp' && act.ac) tgt = Math.min(tgt, 25.5);
+    m.v = clamp(m.v + (tgt-m.v)*m.rate + (Math.random()-.5)*2*m.noise, m.min, m.max);
+    if (k==='people') m.v = Math.round(m.v);
+    m.h.push(m.v); if (m.h.length>40) m.h.shift();
+  }
+  evalRules();
+  if (tickN % 3 === 0) ambientPacket();
+  render();
+}
+
+function evalRules(){
+  const w = M.water.v, thr = rules.flood.thr, now = fmtT(clock);
+  // Ngập
+  if (rules.flood.on){
+    if (!act.pump && w >= thr){
+      act.pump = act.flood = true; stats.sms += 126; stats.auto++;
+      log('bad', `Mực nước ${nf(w)} cm vượt ngưỡng ${thr} cm. Hệ thống bật bơm, đổi bảng điện tử, nhắn tin cho 126 hộ dân Tổ 3.`);
+      narrate(2, [
+        `Cảm biến số 2 tại cống đường Trần Phú đo được mực nước <b>${nf(w)} cm</b>.`,
+        `Thiết bị gửi một gói tin nhỏ qua mạng di động về Trung tâm điều hành:<br><span class="packet">{ thiết bị: "MN-02", mực nước: ${nf(w)} cm, lúc: ${now} }</span>`,
+        `Nền tảng so sánh với ngưỡng <b>${thr} cm</b> do lãnh đạo đặt: <b>đã vượt ngưỡng</b>.`,
+        `Tự động bật bơm thoát nước, hiện "Đường ngập" trên bảng điện tử, nhắn tin cho 126 hộ dân Tổ 3. Tất cả chưa đầy 1 phút, không cần chờ ai đi kiểm tra.`
+      ], ['pump','sign'], 'big');
+    } else if (act.pump && w < thr-10){
+      act.pump = act.flood = false; stats.sms += 126; stats.auto++;
+      log('ok', `Nước đã rút còn ${nf(w)} cm. Hệ thống tắt bơm và nhắn tin báo đường đã thông.`);
+      narrate(2, [
+        `Cảm biến số 2 thấy mực nước giảm còn <b>${nf(w)} cm</b>.`,
+        `Số đo mới tiếp tục được gửi về Trung tâm.`,
+        `Mực nước đã thấp hơn ngưỡng an toàn.`,
+        `Tự động tắt bơm để tiết kiệm điện, gửi tin "Đường đã thông" cho người dân, trả bảng điện tử về bình thường.`
+      ], ['pump','sign'], 'go');
+    }
+  } else if (w >= thr && !flag.missFlood){
+    flag.missFlood = true;
+    log('warn', `Mực nước ${nf(w)} cm vượt ngưỡng nhưng quy tắc cảnh báo ngập đang TẮT. Không ai được báo tin.`);
+    narrate(2, [
+      `Cảm biến số 2 vẫn đo được mực nước <b>${nf(w)} cm</b>.`,
+      `Số đo vẫn về Trung tâm và hiện đỏ trên bảng điều khiển.`,
+      `Nhưng quy tắc cảnh báo ngập đang bị tắt, nên phần mềm không được phép hành động.`,
+      `<b>Không có hành động nào.</b> Người dân không nhận được tin nhắn, bơm không chạy. Bài học: thiết bị chỉ thông minh khi có quy tắc rõ ràng.`
+    ], [], 'big');
+  }
+  if (w < thr-10) flag.missFlood = false;
+
+  // Không khí
+  const q = M.aqi.v;
+  if (rules.air.on){
+    if (!act.air && q > 150){
+      act.air = true; stats.sms += 4; stats.auto++;
+      log('bad', `AQI ${nf(q)} ở mức có hại. Bảng điện tử hiện khuyến cáo, 4 trường học được báo hạn chế cho học sinh ra sân.`);
+      narrate(3, [
+        `Trạm quan trắc số 3 trước trường Tiểu học An Bình đo được chỉ số AQI <b>${nf(q)}</b>.`,
+        `Gói tin gửi về Trung tâm:<br><span class="packet">{ thiết bị: "KK-03", AQI: ${nf(q)}, lúc: ${now} }</span>`,
+        `AQI trên 150 nghĩa là <b>có hại cho sức khỏe</b>, nhất là trẻ em và người cao tuổi.`,
+        `Bảng điện tử hiện "Hạn chế ra ngoài, đeo khẩu trang". Tin nhắn tự động gửi tới 4 trường học trên địa bàn.`
+      ], ['sign'], 'big');
+    } else if (act.air && q < 120){
+      act.air = false; stats.auto++;
+      log('ok', `AQI giảm còn ${nf(q)}. Bảng điện tử trở về bình thường.`);
+      narrate(3, [
+        `Trạm số 3 đo được AQI giảm còn <b>${nf(q)}</b>.`, `Số đo mới được gửi về Trung tâm.`,
+        `Không khí đã trở lại mức chấp nhận được.`, `Gỡ khuyến cáo trên bảng điện tử.`
+      ], ['sign'], 'go');
+    }
+  } else if (q > 150 && !flag.missAir){
+    flag.missAir = true;
+    log('warn', `AQI ${nf(q)} ở mức có hại nhưng quy tắc cảnh báo không khí đang TẮT.`);
+  }
+  if (q < 120) flag.missAir = false;
+  if (!rules.air.on) act.air = false;
+
+  // Đèn đường
+  const L = M.light.v;
+  if (rules.lamp.on){
+    if (!act.lamp && L < 50){
+      act.lamp = true; stats.auto++;
+      log('info', `Trời tối (${nf(L)} lux). Đèn đường tự bật.`);
+      narrate(4, [
+        `Cảm biến ánh sáng số 4 trên cột đèn đo được <b>${nf(L)} lux</b>, trời đã tối.`,
+        `Gói tin gửi về Trung tâm:<br><span class="packet">{ thiết bị: "AS-04", ánh sáng: ${nf(L)} lux, lúc: ${now} }</span>`,
+        `Dưới 50 lux là cần chiếu sáng. Đèn bật theo trời thực tế thay vì giờ cố định.`,
+        `Tự động bật đèn đường. Sáng hôm sau, khi trời đủ sáng, đèn tự tắt.`
+      ], ['lamp'], 'go');
+    } else if (act.lamp && L > 90){
+      act.lamp = false; stats.auto++;
+      log('info', `Trời đủ sáng (${nf(L)} lux). Đèn đường tự tắt.`);
+    }
+  }
+
+  // Người trong phòng
+  const p = M.people.v;
+  if (p > 0){
+    if (emptyMin >= 15 && savedLoad) log('info', `Có ${p} người vào phòng họp. Cán bộ bật lại đèn.`);
+    if (!act.room) act.room = true;
+    emptyMin = 0; savedLoad = 0;
+  } else emptyMin++;
+
+  // Điều hòa
+  const T = M.temp.v;
+  if (rules.ac.on && !act.ac && p > 0 && T > 28){
+    act.ac = true; stats.auto++;
+    log('info', `Phòng họp có ${p} người, nhiệt độ ${nf(T,1)} °C. Điều hòa tự bật ở 26 °C.`);
+    narrate(1, [
+      `Cảm biến số 1 trong phòng họp đo được <b>${nf(T,1)} °C</b> và phát hiện <b>${p} người</b>.`,
+      `Gói tin gửi về Trung tâm qua Wi-Fi của trụ sở:<br><span class="packet">{ thiết bị: "PH-01", nhiệt độ: ${nf(T,1)} °C, số người: ${p}, lúc: ${now} }</span>`,
+      `Quy tắc: có người <b>và</b> nóng hơn 28 °C thì mới cần làm mát.`,
+      `Tự động bật điều hòa ở 26 °C. Phòng trống thì không bật, tránh lãng phí.`
+    ], ['ac'], 'go');
+  }
+
+  // Phòng trống
+  if (p === 0 && emptyMin >= 15 && (act.room || act.ac) && rules.empty.on){
+    savedLoad = (act.room ? .6 : 0) + (act.ac ? 1.8 : 0);
+    act.room = false; act.ac = false; stats.auto++;
+    log('ok', `Phòng họp trống 15 phút. Hệ thống tự tắt đèn và điều hòa.`);
+    narrate(1, [
+      `Cảm biến hiện diện số 1 không thấy ai trong phòng họp suốt <b>15 phút</b>.`,
+      `Gói tin gửi về Trung tâm:<br><span class="packet">{ thiết bị: "PH-01", số người: 0, phòng trống: 15 phút, lúc: ${now} }</span>`,
+      `Đèn và điều hòa vẫn đang chạy trong phòng không người: <b>lãng phí điện</b>.`,
+      `Tự động tắt đèn và điều hòa. Tiết kiệm khoảng ${nf(savedLoad,1)} kW mỗi giờ cho riêng phòng này.`
+    ], ['room','ac'], 'go');
+  }
+  if (p === 0 && savedLoad) stats.kwh += savedLoad/60;
+}
+
+/* ---------- Kể chuyện + gói tin ---------- */
+let storyToken = 0;
+function setStory(lines, active){
+  const rows = document.querySelectorAll('#storyRows li');
+  rows.forEach((li,i) => { li.querySelector('span').innerHTML = lines[i]; li.classList.toggle('on', i<=active); });
+  document.querySelectorAll('#steps .step').forEach((s,i) => s.classList.toggle('on', i===active));
+}
+function narrate(dev, lines, targets, kind){
+  const my = ++storyToken;
+  setStory(lines, reduce ? 3 : 0);
+  if (reduce) return;
+  const d = DEV[dev];
+  setTimeout(()=>{ if(my!==storyToken) return; setStory(lines,1); flyPacket(d, CENTER, kind, 800); }, 900);
+  setTimeout(()=>{ if(my!==storyToken) return; setStory(lines,2); }, 2000);
+  setTimeout(()=>{ if(my!==storyToken) return; setStory(lines,3); targets.forEach(t => flyPacket(CENTER, APOS[t], kind==='big'?'go':kind, 800)); }, 3100);
+  setTimeout(()=>{ if(my!==storyToken) return; document.querySelectorAll('#steps .step').forEach(s=>s.classList.remove('on')); }, 6000);
+}
+function flyPacket(a, b, kind, dur){
+  if (reduce) return;
+  const c = document.createElementNS(NS,'circle');
+  c.setAttribute('r', kind ? 7 : 4);
+  c.setAttribute('class', 's-pkt' + (kind ? ' '+kind : ''));
+  if (!kind) c.style.opacity = .7;
+  $('#pkts').appendChild(c);
+  const t0 = performance.now();
+  (function step(t){
+    const k = Math.min(1,(t-t0)/dur), e = k<.5 ? 2*k*k : 1-Math.pow(-2*k+2,2)/2;
+    c.setAttribute('cx', a.x+(b.x-a.x)*e); c.setAttribute('cy', a.y+(b.y-a.y)*e);
+    if (k<1) requestAnimationFrame(step); else c.remove();
+  })(t0);
+}
+function ambientPacket(){ flyPacket(DEV[1+Math.floor(Math.random()*4)], CENTER, '', 900); }
+
+/* ---------- Nhật ký ---------- */
+function log(sev, text){
+  const li = document.createElement('li'); li.className = sev;
+  li.innerHTML = `<time>${fmtT(clock)}</time><span></span>`;
+  li.querySelector('span').textContent = text;
+  const ul = $('#log'); ul.prepend(li);
+  while (ul.children.length > 40) ul.lastChild.remove();
+}
+
+/* ---------- Dựng giao diện ---------- */
+function buildScene(){
+  const links = $('#links'), mk = $('#markers');
+  for (const id in DEV){
+    const d = DEV[id];
+    const p = document.createElementNS(NS,'path');
+    p.setAttribute('class','s-link');
+    p.setAttribute('d', `M${d.x} ${d.y} Q ${(d.x+CENTER.x)/2} ${Math.min(d.y,CENTER.y)-10} ${CENTER.x} ${CENTER.y+20}`);
+    links.appendChild(p);
+    const g = document.createElementNS(NS,'g'); g.setAttribute('class','s-mk'); g.id = 'mk'+id;
+    g.innerHTML = `<circle cx="${d.x}" cy="${d.y}" r="13"/><text x="${d.x}" y="${d.y+1}">${id}</text><title>${d.name} (${d.code})</title>`;
+    mk.appendChild(g);
+  }
+  const rain = $('#rain');
+  for (let i=0;i<70;i++){
+    const l = document.createElementNS(NS,'line');
+    const x = Math.random()*820, y = Math.random()*380;
+    l.setAttribute('x1',x); l.setAttribute('y1',y); l.setAttribute('x2',x-4); l.setAttribute('y2',y+14);
+    l.style.animationDelay = (-Math.random()*.7).toFixed(2)+'s';
+    rain.appendChild(l);
+  }
+  const g = $('#gauge');
+  for (let cm=10; cm<=50; cm+=10){
+    const y = 380 - cm*.8;
+    g.insertAdjacentHTML('beforeend', `<line class="s-gauge" x1="516" x2="524" y1="${y}" y2="${y}"/>`);
+  }
+}
+function buildPanels(){
+  const box = $('#sensors');
+  for (const k in M){
+    const m = M[k];
+    box.insertAdjacentHTML('beforeend', `<div class="card sensor" id="c-${k}">
+      <span class="mk" title="Thiết bị số ${m.dev}">${m.dev}</span>
+      <div style="min-width:0"><div class="nm">${m.label}</div><div class="loc">${m.loc} · ${DEV[m.dev].code}</div></div>
+      <div class="val"><span id="v-${k}"></span><small>${m.unit}</small></div>
+      <div class="row2"><span class="pill" id="p-${k}"></span><svg viewBox="0 0 140 30" preserveAspectRatio="none" aria-hidden="true"><path id="sa-${k}" opacity=".15"/><path id="sl-${k}" fill="none" stroke-width="2" stroke-linejoin="round"/><circle id="se-${k}" r="3"/></svg></div>
+    </div>`);
+  }
+  const sl = $('#sliders');
+  for (const k in M){
+    const m = M[k];
+    sl.insertAdjacentHTML('beforeend', `<div class="slider"><div class="top2"><label for="in-${k}">${m.dev} · ${m.label}</label><output id="o-${k}" for="in-${k}"></output></div>
+      <input type="range" id="in-${k}" min="${m.min}" max="${m.max}" step="${m.step}" value="${m.v}"></div>`);
+    $('#in-'+k).addEventListener('input', e => {
+      const v = +e.target.value; M[k].v = M[k].t = v;
+      if (scn){ scn = null; raining = false; $('#scnBadge').textContent = 'Bạn đang tự điều chỉnh'; $('#scnIntro').textContent = 'Bạn đang đóng vai cảm biến. Hệ thống sẽ phản ứng theo đúng các quy tắc đang bật.';
+        document.querySelectorAll('#scnBtns button').forEach(b => b.setAttribute('aria-pressed','false')); }
+      render();
+    });
+  }
+  const RU = [
+    ['flood', 'Cảnh báo ngập', () => `Nếu mực nước ≥ <em>${rules.flood.thr} cm</em> thì bật bơm, đổi bảng điện tử và nhắn tin cho người dân Tổ 3.`],
+    ['air', 'Cảnh báo không khí', () => `Nếu chỉ số AQI <em>trên 150</em> thì hiện khuyến cáo và báo cho các trường học.`],
+    ['lamp', 'Đèn đường theo trời', () => `Nếu trời tối, <em>dưới 50 lux</em>, thì bật đèn đường; trời sáng thì tắt.`],
+    ['ac', 'Điều hòa thông minh', () => `Nếu phòng họp <em>có người</em> và nóng hơn <em>28 °C</em> thì bật điều hòa 26 °C.`],
+    ['empty', 'Tắt điện khi phòng trống', () => `Nếu phòng họp <em>trống quá 15 phút</em> thì tắt đèn và điều hòa.`],
+  ];
+  const rb = $('#rules');
+  RU.forEach(([id, title, txt]) => {
+    rb.insertAdjacentHTML('beforeend', `<div class="rule" id="r-${id}">
+      <label class="switch"><input type="checkbox" id="rs-${id}" checked aria-label="Bật hoặc tắt quy tắc ${title}"><span></span></label>
+      <div><h3>${title}</h3><p class="if" id="rt-${id}">${txt()}</p></div>
+      ${id==='flood' ? `<div class="thr"><label for="thr">Ngưỡng</label><input type="range" id="thr" min="15" max="45" step="5" value="30" style="flex:1"><output id="thrO" for="thr">30 cm</output></div>` : ''}
+    </div>`);
+    $('#rs-'+id).addEventListener('change', e => {
+      rules[id].on = e.target.checked;
+      $('#r-'+id).classList.toggle('off', !e.target.checked);
+      log(e.target.checked ? 'info' : 'warn', `Lãnh đạo đã ${e.target.checked ? 'BẬT' : 'TẮT'} quy tắc "${title}".`);
+      if (!e.target.checked && id==='flood'){ act.pump = act.flood = false; }
+      render();
+    });
+  });
+  $('#thr').addEventListener('input', e => {
+    rules.flood.thr = +e.target.value;
+    $('#thrO').textContent = rules.flood.thr + ' cm';
+    $('#rt-flood').innerHTML = RU[0][2]();
+    render();
+  });
+  $('#thr').addEventListener('change', () => log('info', `Lãnh đạo điều chỉnh ngưỡng cảnh báo ngập thành ${rules.flood.thr} cm.`));
+
+  const sb = $('#scnBtns');
+  for (const k in SCN) sb.insertAdjacentHTML('beforeend', `<button type="button" data-k="${k}" aria-pressed="false">${SCN[k].name}<small>${SCN[k].hint}</small></button>`);
+  sb.addEventListener('click', e => { const b = e.target.closest('button'); if (b) startScenario(b.dataset.k); });
+}
+
+const CHIPS = [
+  ['room','Đèn phòng họp'], ['ac','Điều hòa'], ['lamp','Đèn đường'], ['pump','Bơm thoát nước'], ['sign','Bảng điện tử'],
+];
+function render(){
+  const t = fmtT(clock);
+  $('#clock').textContent = t; $('#sceneClock').textContent = t;
+  for (const k in M){
+    const m = M[k], [cls, txt] = status(k);
+    $('#v-'+k).textContent = nf(m.v, m.dec);
+    const p = $('#p-'+k); p.className = 'pill '+cls; p.textContent = txt;
+    $('#c-'+k).classList.toggle('bad', cls==='bad');
+    const col = {ok:'var(--ok)',warn:'var(--warn)',bad:'var(--bad)',info:'var(--info)',idle:'var(--muted)'}[cls];
+    const pts = m.h.map((v,i) => [i*(140/39), 27 - (v-m.min)/(m.max-m.min)*24]);
+    const d = 'M'+pts.map(q => q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' L');
+    const sl = $('#sl-'+k); sl.setAttribute('d', d); sl.setAttribute('stroke', col);
+    const sa = $('#sa-'+k); sa.setAttribute('d', d+' L140 30 L0 30 Z'); sa.setAttribute('fill', col);
+    const e = $('#se-'+k), last = pts[pts.length-1]; e.setAttribute('cx', last[0]); e.setAttribute('cy', last[1]); e.setAttribute('fill', col);
+    const inp = $('#in-'+k); if (document.activeElement !== inp) inp.value = m.t;
+    $('#o-'+k).textContent = nf(m.v, m.dec) + ' ' + m.unit;
+  }
+  // markers
+  $('#mk1').classList.toggle('alarm', status('temp')[0]==='bad');
+  $('#mk2').classList.toggle('alarm', status('water')[0]==='bad');
+  $('#mk3').classList.toggle('alarm', status('aqi')[0]==='bad');
+  // scene
+  const wh = Math.min(48, M.water.v*.8);
+  const w = $('#water'); w.setAttribute('height', wh); w.setAttribute('y', 380-wh);
+  const ty = 380 - rules.flood.thr*.8;
+  $('#thrLine').setAttribute('y1', ty); $('#thrLine').setAttribute('y2', ty);
+  $('#thrTxt').setAttribute('y', ty-5); $('#thrTxt').textContent = 'Ngưỡng ' + rules.flood.thr + ' cm';
+  $('#night').setAttribute('opacity', clamp(.62 - M.light.v/600, 0, .62).toFixed(2));
+  $('#haze').setAttribute('opacity', clamp((M.aqi.v-60)/260, 0, .5).toFixed(2));
+  $('#rain').classList.toggle('on', raining);
+  $('#meetWin').classList.toggle('lit', act.room);
+  $('#acAir').classList.toggle('on', act.ac);
+  $('#glow').setAttribute('opacity', act.lamp ? .45 : 0);
+  $('#lampHead').classList.toggle('on', act.lamp);
+  $('#pump').classList.toggle('on', act.pump);
+  const ppl = $('#people'); const n = Math.min(8, M.people.v);
+  if (ppl.dataset.n !== String(n)){ ppl.dataset.n = n; ppl.innerHTML = '';
+    for (let i=0;i<n;i++) ppl.insertAdjacentHTML('beforeend', `<circle class="s-person" cx="${188+i*10.5}" cy="226" r="4"/><rect class="s-person" x="${184.5+i*10.5}" y="229" width="7" height="6" rx="2"/>`); }
+  let s1='PHƯỜNG AN BÌNH', s2='Chào mừng quý khách', alert=false;
+  if (act.flood){ s1='ĐƯỜNG TRẦN PHÚ NGẬP'; s2='Xin đi lối khác'; alert=true; }
+  else if (act.air){ s1='KHÔNG KHÍ XẤU'; s2='Hạn chế ra ngoài, đeo khẩu trang'; alert=true; }
+  $('#sign1').textContent = s1; $('#sign2').textContent = s2;
+  $('#sign1').classList.toggle('alert', alert);
+  // chips
+  const signOn = act.flood || act.air;
+  $('#chips').innerHTML = CHIPS.map(([k,l]) => {
+    const on = k==='sign' ? signOn : act[k];
+    const cls = (k==='sign' && signOn) || (k==='pump' && on) ? 'alert' : on ? 'on' : '';
+    const st = k==='sign' ? (signOn ? 'đang cảnh báo' : 'bình thường') : (on ? 'đang bật' : 'tắt');
+    return `<span class="chip ${cls}"><i></i>${l}: ${st}</span>`;
+  }).join('');
+  // stats
+  $('#stSms').textContent = nf(stats.sms);
+  $('#stAuto').textContent = nf(stats.auto);
+  $('#stKwh').textContent = nf(stats.kwh, 2);
+  $('#stKwhK').textContent = `kWh điện tiết kiệm (≈ ${nf(Math.round(stats.kwh*3000))} đ)`;
+}
+
+function schedule(){ clearInterval(timer); if (running) timer = setInterval(tick, speed===1 ? 900 : 300); }
+function togglePause(){ running = !running; $('#pause').textContent = running ? 'Tạm dừng' : 'Tiếp tục'; $('#pause').classList.toggle('primary', !running); schedule(); }
+$('#pause').addEventListener('click', togglePause);
+$('#speed').addEventListener('click', () => { speed = speed===1 ? 3 : 1; $('#speed').textContent = 'Tốc độ ×'+speed; schedule(); });
+
+buildScene(); buildPanels();
+startScenario('normal');
+schedule();
+})();
+</script>
+
+</body>
+</html>
